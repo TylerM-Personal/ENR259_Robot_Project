@@ -15,7 +15,7 @@ constexpr bool DEBUG_MISSION  = true;
 // Module enable toggles
 // =========================
 constexpr bool ENABLE_SORTING  = true;    // enabled — uses top sorter + TCS34725
-constexpr bool ENABLE_ENCODERS = false;   // still disabled — scooper uses pins 4 and 5
+constexpr bool ENABLE_ENCODERS = false;   // still disabled — sorter now uses pins 2 and 3, scooper uses 4 and 5
 
 // =========================
 // Drivebase pins (Teensy 4.0)
@@ -33,7 +33,7 @@ constexpr int STBY = 9;
 // =========================
 // Encoder pins
 // Keep disabled in this version.
-// LEFT_ENC_B conflicts with scooper left servo on pin 4.
+// Sorter now uses pins 2 and 3, and scooper uses pins 4 and 5.
 // =========================
 // constexpr int LEFT_ENC_A  = 2;
 // constexpr int LEFT_ENC_B  = 4;
@@ -63,8 +63,8 @@ constexpr int BLUE_GATE_SERVO_PIN  = 13;
 // =========================
 // Top sorting mechanism pins
 // =========================
-constexpr int SORTING_SERVO_PIN   = 20;
-constexpr int SORT_GATE_SERVO_PIN = 17;
+constexpr int SORTING_SERVO_PIN   = 3;
+constexpr int SORT_GATE_SERVO_PIN = 2;
 
 // =========================
 // Field / path constants — TIME BASED

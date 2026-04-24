@@ -4,7 +4,7 @@ ENR259_Robot_Project
 What this version does:
 - Uses the time based drivebase logic with Teensy 4.0, TB6612FNG, and MPU-6050 heading hold.
 - Uses two scooper servos on pins 4 and 5.
-- Uses the top sorting mechanism on pins 20 and 17 with the TCS34725.
+- Uses the top sorting mechanism on pins 3 and 2 with the TCS34725.
 - Keeps the final 3 top wall dropoff on the direct gates at the end of the mission.
 - Keeps sorting non blocking so drivebase timing does not freeze during a sort.
 
@@ -29,14 +29,14 @@ Pins currently used:
 - Red final gate servo: 11
 - White final gate servo: 12
 - Blue final gate servo: 13
-- Sorting servo: 20
-- Sorting gate servo: 17
+- Sorting servo: 3
+- Sorting gate servo: 2
 - Conveyor PWM: 22
 - I2C SDA: 18
 - I2C SCL: 19
 
 Notes:
 - MPU-6050 and TCS34725 share the same I2C bus on pins 18 and 19.
-- Encoders remain disabled in this version because the current scooper pin usage conflicts with the old encoder layout.
+- Encoders remain disabled in this version because the sorter now uses pins 2 and 3, and the scooper uses pins 4 and 5.
 - If a servo moves the wrong way, swap that servo's open and closed values in Config.h.
 - Keep the sensor area empty during startup so ambient calibration is clean.
