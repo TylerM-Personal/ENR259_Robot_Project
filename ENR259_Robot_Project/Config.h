@@ -106,6 +106,15 @@ constexpr float KD = 0.4f;
 constexpr float DIST_PER_COUNT = 0.505f;
 
 // =========================
+// Drivebase logging
+// Logs into RAM while driving, then prints CSV after each straight move.
+// =========================
+constexpr bool ENABLE_DRIVE_LOG     = true;
+constexpr bool DRIVE_LOG_AUTO_PRINT = true;
+constexpr unsigned long DRIVE_LOG_SAMPLE_MS = 50;
+constexpr int DRIVE_LOG_MAX_SAMPLES = 160;
+
+// =========================
 // Scooper positions — two mirrored MG996R
 // =========================
 constexpr int SCOOPER_LEFT_DOWN_POS  = 150;

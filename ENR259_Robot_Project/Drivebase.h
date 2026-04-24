@@ -9,6 +9,8 @@ void initDrivebase();
 void updateDrivebase();
 void stopDrivebase();
 void resetYaw();   // call after all inits to zero heading reference
+void resetDriveLog();
+void printDriveLog();
 
 // durationMs — drives for fixed time, gyro PID corrects heading throughout
 void startStraightMove(unsigned long durationMs, int baseSpeed, int direction, float targetHeading);
