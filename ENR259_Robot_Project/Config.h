@@ -130,10 +130,10 @@ constexpr unsigned long GATE_SETTLE_MS    = 250;
 constexpr int SORT_GATE_CLOSED_POS = 130;
 constexpr int SORT_GATE_OPEN_POS   = 45;
 
-constexpr int SORT_ORIGIN_POS = 90;
+constexpr int SORT_ORIGIN_POS = 85;
 constexpr int SORT_RED_POS    = 50;
-constexpr int SORT_WHITE_POS  = 90;
-constexpr int SORT_BLUE_POS   = 180;
+constexpr int SORT_WHITE_POS  = 85;
+constexpr int SORT_BLUE_POS   = 120;
 
 constexpr unsigned long SORT_AMBIENT_CAL_MS  = 2000;
 constexpr unsigned long SORTING_SERVO_DELAY  = 300;
