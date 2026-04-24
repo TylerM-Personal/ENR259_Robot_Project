@@ -6,8 +6,8 @@ Servo sortServo;
 Servo sortGateServo;
 
 // Pins
-const int PIN_SORT_SERVO = 20;
-const int PIN_SORT_GATE  = 17;
+const int PIN_SORT_SERVO = 3;
+const int PIN_SORT_GATE  = 2;
 
 // Angles
 const int SORT_RED_ANGLE   = 50;
