@@ -3,7 +3,7 @@
 
 void initConveyor() {
   pinMode(CONVEYOR_PIN, OUTPUT);
-  analogWriteFrequency(CONVEYOR_PIN, 20000);  // 20 kHz, inaudible & MOSFET-friendly
+  analogWriteFrequency(CONVEYOR_PIN, 20000);
   analogWrite(CONVEYOR_PIN, 0);
 }
 
@@ -13,6 +13,8 @@ void setConveyorSpeed(int speed) {
 }
 
 void conveyorOn() {
+  // Run at the configured steady speed.
+  // The previous version hard-coded 128, which ignored CONVEYOR_SPEED.
   setConveyorSpeed(CONVEYOR_SPEED);
 }
 

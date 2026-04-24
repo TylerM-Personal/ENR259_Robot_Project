@@ -8,9 +8,11 @@ enum TurnDirection {
 void initDrivebase();
 void updateDrivebase();
 void stopDrivebase();
+void resetYaw();   // call after all inits to zero heading reference
 
-void startStraightMove(float distanceMM, int baseSpeed, int direction, float targetHeading);
+// durationMs — drives for fixed time, gyro PID corrects heading throughout
+void startStraightMove(unsigned long durationMs, int baseSpeed, int direction, float targetHeading);
 void startPivotToHeading(float targetHeading, TurnDirection direction);
 
-bool drivebaseIsBusy();
+bool  drivebaseIsBusy();
 float getYawAngle();

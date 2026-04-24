@@ -4,16 +4,10 @@
 
 Servo sortServo;
 Servo sortGateServo;
-Servo redStoreServo;
-Servo whiteStoreServo;
-Servo blueStoreServo;
 
 // Pins
-const int PIN_SORT_SERVO  = 20;
-const int PIN_SORT_GATE   = 17;
-const int PIN_RED_STORE   = 11;
-const int PIN_WHITE_STORE = 12;
-const int PIN_BLUE_STORE  = 13;
+const int PIN_SORT_SERVO = 20;
+const int PIN_SORT_GATE  = 17;
 
 // Angles
 const int SORT_RED_ANGLE   = 50;
@@ -23,10 +17,6 @@ const int SORT_HOME_ANGLE  = 90;
 
 const int SORT_GATE_CLOSED = 130;
 const int SORT_GATE_OPEN   = 45;
-
-const int RED_STORE_OPEN   = 95;
-const int WHITE_STORE_OPEN = 95;
-const int BLUE_STORE_OPEN  = 95;
 
 // Timing
 const unsigned long STARTUP_DELAY_MS      = 2000UL;
@@ -110,12 +100,6 @@ int sortAngleForColor(BallColor color) {
     default:
       return SORT_WHITE_ANGLE;
   }
-}
-
-void keepBottomGatesOpen() {
-  redStoreServo.write(RED_STORE_OPEN);
-  whiteStoreServo.write(WHITE_STORE_OPEN);
-  blueStoreServo.write(BLUE_STORE_OPEN);
 }
 
 void pulseSortGate() {
@@ -421,13 +405,9 @@ void setup() {
 
   sortServo.attach(PIN_SORT_SERVO);
   sortGateServo.attach(PIN_SORT_GATE);
-  redStoreServo.attach(PIN_RED_STORE);
-  whiteStoreServo.attach(PIN_WHITE_STORE);
-  blueStoreServo.attach(PIN_BLUE_STORE);
 
   sortServo.write(SORT_WHITE_ANGLE);
   sortGateServo.write(SORT_GATE_CLOSED);
-  keepBottomGatesOpen();
 
   if (!tcs.begin()) {
     Serial.println("TCS34725 not found. Check wiring.");
@@ -454,6 +434,5 @@ void setup() {
 }
 
 void loop() {
-  keepBottomGatesOpen();
   readAndSort();
 }
