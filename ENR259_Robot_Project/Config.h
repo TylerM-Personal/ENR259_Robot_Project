@@ -15,7 +15,7 @@ constexpr bool DEBUG_MISSION  = true;
 // Module enable toggles
 // =========================
 constexpr bool ENABLE_SORTING  = true;    // enabled — uses top sorter + TCS34725
-constexpr bool ENABLE_ENCODERS = false;   // still disabled — sorter now uses pins 2 and 3, scooper uses 4 and 5
+constexpr bool ENABLE_ENCODERS = false;   // still disabled — scooper uses pins 4 and 5
 
 // =========================
 // Drivebase pins (Teensy 4.0)
@@ -33,7 +33,7 @@ constexpr int STBY = 9;
 // =========================
 // Encoder pins
 // Keep disabled in this version.
-// Sorter now uses pins 2 and 3, and scooper uses pins 4 and 5.
+// LEFT_ENC_B conflicts with scooper left servo on pin 4.
 // =========================
 // constexpr int LEFT_ENC_A  = 2;
 // constexpr int LEFT_ENC_B  = 4;
@@ -97,7 +97,7 @@ constexpr unsigned long PAUSE_MS        = 200;
 constexpr unsigned long TURN_BRAKE_MS   = 60;
 constexpr unsigned long TURN_TIMEOUT_MS = 2500;
 constexpr float TURN_STOP_TOLERANCE_DEG = 2.0f;
-constexpr float GYRO_Z_SIGN             = -1.0f;
+constexpr float GYRO_Z_SIGN             = 1.0f;
 
 constexpr float KP = 1.0f;
 constexpr float KI = 0.0f;
@@ -113,7 +113,7 @@ constexpr int SCOOPER_RIGHT_DOWN_POS = 30;
 constexpr int SCOOPER_LEFT_UP_POS    = 30;
 constexpr int SCOOPER_RIGHT_UP_POS   = 150;
 constexpr unsigned long SCOOPER_DOWN_HOLD_MS = 1000;
-constexpr unsigned long SCOOPER_UP_HOLD_MS   = 1000;
+constexpr unsigned long SCOOPER_UP_HOLD_MS   = 3000;
 
 // =========================
 // Final 3 top-wall gates
@@ -137,7 +137,7 @@ constexpr int SORT_BLUE_POS   = 180;
 
 constexpr unsigned long SORT_AMBIENT_CAL_MS  = 2000;
 constexpr unsigned long SORTING_SERVO_DELAY  = 300;
-constexpr unsigned long SORT_GATE_OPEN_TIME  = 1400;
+constexpr unsigned long SORT_GATE_OPEN_TIME  = 900;
 constexpr unsigned long SORT_RESET_DELAY     = 200;
 constexpr unsigned long SORT_SENSOR_READ_MS  = 60;
 constexpr unsigned long SORT_SAMPLE_GAP_MS   = 12;
@@ -148,4 +148,4 @@ constexpr int           SORT_SAMPLE_COUNT    = 5;
 // Conveyor motor (MOSFET PWM)
 // =========================
 constexpr int CONVEYOR_PIN   = 22;
-constexpr int CONVEYOR_SPEED = 150;
+constexpr int CONVEYOR_SPEED = 180;
