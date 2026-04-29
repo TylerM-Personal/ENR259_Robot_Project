@@ -246,7 +246,7 @@ void updateDrivebase() {
         break;
       }
 
-      float error      = yawAngle - activeTargetHeading;
+      float error      = activeTargetHeading - yawAngle;
       pidIntegral     += error * 0.01f;
       pidIntegral      = constrain(pidIntegral, -30.0f, 30.0f);
       float derivative = error - pidLastError;
