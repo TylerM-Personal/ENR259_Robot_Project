@@ -1,5 +1,6 @@
 #include "Config.h"
 #include "Sorting.h"
+#include "Logger.h"
 #include <Wire.h>
 #include <Servo.h>
 #include "Adafruit_TCS34725.h"
@@ -15,29 +16,6 @@ Adafruit_TCS34725 tcs(
 
 bool sortingEnabled = false;
 unsigned long lastReadTime = 0;
-
-uint16_t ballPresentClear = 250;
-uint16_t ballGoneClear    = 150;
-
-float ambientR = 0.0f;
-float ambientG = 0.0f;
-float ambientB = 0.0f;
-float ambientC = 0.0f;
-
-struct ColorFeatures {
-  int rr;
-  int gg;
-  int bb;
-  int cc;
-
-  float rn;
-  float gn;
-  float bn;
-
-  float dRed;
-  float dWhite;
-  float dBlue;
-};
 
 enum BallColor {
   COLOR_NONE,
@@ -59,10 +37,6 @@ enum SortingState {
 SortingState sortingState = SORT_IDLE;
 unsigned long sortingStateStart = 0;
 int activeTargetAngle = SORT_WHITE_POS;
-
-float sqf(float x) {
-  return x * x;
-}
 
 const char* colorName(BallColor color) {
   switch (color) {
@@ -92,203 +66,51 @@ void setSortingState(SortingState nextState) {
   }
 }
 
-void computeThresholdsFromAmbient() {
-  ballPresentClear = (uint16_t)max(220, (int)(ambientC + 160.0f));
-  ballGoneClear    = (uint16_t)max(140, (int)(ambientC + 70.0f));
+// Simple raw-value classifier — uses scale factors to equalize channel
+// sensitivities of TCS34725, then compares with a noise threshold.
+BallColor classifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
+  float gScaled = g * 1.2f;
+  float bScaled = b * 1.83f;
 
-  if (ballGoneClear >= ballPresentClear - 20) {
-    ballGoneClear = ballPresentClear - 20;
-  }
-}
-
-void calibrateAmbientOnce() {
-  uint32_t sumR = 0;
-  uint32_t sumG = 0;
-  uint32_t sumB = 0;
-  uint32_t sumC = 0;
-  uint16_t count = 0;
-
-  unsigned long startTime = millis();
-
-  while (millis() - startTime < SORT_AMBIENT_CAL_MS) {
-    uint16_t r, g, b, c;
-    tcs.getRawData(&r, &g, &b, &c);
-
-    sumR += r;
-    sumG += g;
-    sumB += b;
-    sumC += c;
-    count++;
-
-    delay(25);
-  }
-
-  if (count == 0) {
-    count = 1;
-  }
-
-  ambientR = (float)sumR / count;
-  ambientG = (float)sumG / count;
-  ambientB = (float)sumB / count;
-  ambientC = (float)sumC / count;
-
-  computeThresholdsFromAmbient();
-}
-
-void readAveragedBallSample(uint16_t &rAvg, uint16_t &gAvg, uint16_t &bAvg, uint16_t &cAvg) {
-  uint32_t sumR = 0;
-  uint32_t sumG = 0;
-  uint32_t sumB = 0;
-  uint32_t sumC = 0;
-
-  for (int i = 0; i < SORT_SAMPLE_COUNT; i++) {
-    uint16_t r, g, b, c;
-    tcs.getRawData(&r, &g, &b, &c);
-    sumR += r;
-    sumG += g;
-    sumB += b;
-    sumC += c;
-    delay(SORT_SAMPLE_GAP_MS);
-  }
-
-  rAvg = sumR / SORT_SAMPLE_COUNT;
-  gAvg = sumG / SORT_SAMPLE_COUNT;
-  bAvg = sumB / SORT_SAMPLE_COUNT;
-  cAvg = sumC / SORT_SAMPLE_COUNT;
-}
-
-ColorFeatures computeFeatures(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
-  ColorFeatures f;
-
-  f.rr = max(0, (int)r - (int)ambientR);
-  f.gg = max(0, (int)g - (int)ambientG);
-  f.bb = max(0, (int)b - (int)ambientB);
-  f.cc = max(0, (int)c - (int)ambientC);
-
-  float sumRGB = (float)(f.rr + f.gg + f.bb);
-
-  if (sumRGB > 0.0f) {
-    f.rn = f.rr / sumRGB;
-    f.gn = f.gg / sumRGB;
-    f.bn = f.bb / sumRGB;
-  } else {
-    f.rn = 0.0f;
-    f.gn = 0.0f;
-    f.bn = 0.0f;
-  }
-
-  f.dRed =
-    sqf(f.rn - 0.784f) +
-    sqf(f.gn - 0.096f) +
-    sqf(f.bn - 0.120f);
-
-  f.dWhite =
-    sqf(f.rn - 0.457f) +
-    sqf(f.gn - 0.325f) +
-    sqf(f.bn - 0.217f);
-
-  f.dBlue =
-    sqf(f.rn - 0.307f) +
-    sqf(f.gn - 0.331f) +
-    sqf(f.bn - 0.360f);
-
-  return f;
-}
-
-BallColor classifyColor(const ColorFeatures &f) {
-  float sumRGB = (float)(f.rr + f.gg + f.bb);
-
-  if (f.cc < 80 || sumRGB < 50.0f) {
-    return COLOR_NONE;
-  }
-
-  if (f.rn >= 0.62f &&
-      f.rr >= f.gg * 2.0f &&
-      f.rr >= f.bb * 1.8f) {
-    return COLOR_RED;
-  }
-
-  if (f.rn <= 0.40f &&
-      f.gn >= 0.28f &&
-      f.bn >= 0.31f &&
-      f.rr < f.gg &&
-      f.rr < f.bb) {
-    return COLOR_BLUE;
-  }
-
-  if (f.rn >= 0.38f && f.rn <= 0.60f &&
-      f.gn >= 0.24f && f.gn <= 0.40f &&
-      f.bn >= 0.14f && f.bn <= 0.30f) {
+  // White — high overall brightness
+  if (c > 17000) {
     return COLOR_WHITE;
   }
 
-  float minD = f.dRed;
-  BallColor guess = COLOR_RED;
-
-  if (f.dWhite < minD) {
-    minD = f.dWhite;
-    guess = COLOR_WHITE;
-  }
-
-  if (f.dBlue < minD) {
-    minD = f.dBlue;
-    guess = COLOR_BLUE;
-  }
-
-  if (minD < 0.045f) {
-    if (guess == COLOR_BLUE && f.bn >= 0.30f && f.rn <= 0.42f) {
-      return COLOR_BLUE;
-    }
-    return guess;
-  }
-
-  if (f.rn > 0.60f) {
+  // Red — red dominates with 200 margin
+  if (r > gScaled + 200 && r > bScaled + 200) {
     return COLOR_RED;
   }
 
-  if (f.rn < 0.42f && f.bn > 0.30f) {
+  // Blue — scaled blue dominates with 200 margin
+  if (bScaled > gScaled + 200 && bScaled > r + 200) {
     return COLOR_BLUE;
-  }
-
-  if (f.gn > 0.23f && f.bn > 0.13f) {
-    return COLOR_WHITE;
   }
 
   return COLOR_NONE;
 }
 
-void printDebug(uint16_t r, uint16_t g, uint16_t b, uint16_t c, const ColorFeatures &f, BallColor color) {
+// Detect ball presence by overall clear value above a fixed threshold
+bool ballPresent(uint16_t c) {
+  return c > 1000;
+}
+
+bool ballGone(uint16_t c) {
+  return c < 600;
+}
+
+void printDebug(uint16_t r, uint16_t g, uint16_t b, uint16_t c, BallColor color) {
   if (!DEBUG_SORTING) return;
 
   Serial.println("===== BALL DETECTED =====");
   Serial.print("Detected color: ");
   Serial.println(colorName(color));
-
   Serial.print("Raw R: "); Serial.println(r);
   Serial.print("Raw G: "); Serial.println(g);
   Serial.print("Raw B: "); Serial.println(b);
   Serial.print("Raw C: "); Serial.println(c);
-
-  Serial.print("Ambient R: "); Serial.println(ambientR, 1);
-  Serial.print("Ambient G: "); Serial.println(ambientG, 1);
-  Serial.print("Ambient B: "); Serial.println(ambientB, 1);
-  Serial.print("Ambient C: "); Serial.println(ambientC, 1);
-
-  Serial.print("Comp R: "); Serial.println(f.rr);
-  Serial.print("Comp G: "); Serial.println(f.gg);
-  Serial.print("Comp B: "); Serial.println(f.bb);
-  Serial.print("Comp C: "); Serial.println(f.cc);
-
-  Serial.print("R frac: "); Serial.println(f.rn, 3);
-  Serial.print("G frac: "); Serial.println(f.gn, 3);
-  Serial.print("B frac: "); Serial.println(f.bn, 3);
-
-  Serial.print("dRed: "); Serial.println(f.dRed, 4);
-  Serial.print("dWhite: "); Serial.println(f.dWhite, 4);
-  Serial.print("dBlue: "); Serial.println(f.dBlue, 4);
-
-  Serial.print("ballPresentClear: "); Serial.println(ballPresentClear);
-  Serial.print("ballGoneClear: "); Serial.println(ballGoneClear);
+  Serial.print("G*1.2: "); Serial.println(g * 1.2f, 1);
+  Serial.print("B*1.83: "); Serial.println(b * 1.83f, 1);
   Serial.println();
 }
 
@@ -320,19 +142,12 @@ void initSorting() {
     return;
   }
 
-  calibrateAmbientOnce();
   sortingEnabled = true;
   lastReadTime = millis();
   setSortingState(SORT_IDLE);
 
   if (DEBUG_GENERAL || DEBUG_SORTING) {
-    Serial.println("Sorting initialised.");
-    Serial.print("Ambient R: "); Serial.println(ambientR, 1);
-    Serial.print("Ambient G: "); Serial.println(ambientG, 1);
-    Serial.print("Ambient B: "); Serial.println(ambientB, 1);
-    Serial.print("Ambient C: "); Serial.println(ambientC, 1);
-    Serial.print("ballPresentClear: "); Serial.println(ballPresentClear);
-    Serial.print("ballGoneClear: "); Serial.println(ballGoneClear);
+    Serial.println("Sorting initialised (simple classifier).");
   }
 }
 
@@ -363,24 +178,23 @@ void updateSorting() {
       }
       lastReadTime = now;
 
-      uint16_t rNow, gNow, bNow, cNow;
-      tcs.getRawData(&rNow, &gNow, &bNow, &cNow);
+      uint16_t r, g, b, c;
+      tcs.getRawData(&r, &g, &b, &c);
 
-      if (cNow >= ballPresentClear) {
-        uint16_t r, g, b, c;
-        readAveragedBallSample(r, g, b, c);
+      // Log every reading regardless of whether ball is present
+      logColorData(r, g, b, c);
 
-        ColorFeatures f = computeFeatures(r, g, b, c);
-        BallColor color = classifyColor(f);
+      if (ballPresent(c)) {
+        BallColor color = classifyColor(r, g, b, c);
 
         if (color != COLOR_NONE) {
           activeTargetAngle = sortAngleForColor(color);
-          printDebug(r, g, b, c, f, color);
+          printDebug(r, g, b, c, color);
           sortServo.write(activeTargetAngle);
           setSortingState(SORT_MOVE_TO_TARGET);
         } else {
           if (DEBUG_SORTING) {
-            Serial.println("Ball detected but classification was NONE.");
+            Serial.println("Ball present but classification was NONE.");
           }
           setSortingState(SORT_WAIT_CLEAR);
         }
@@ -415,14 +229,12 @@ void updateSorting() {
       }
       lastReadTime = now;
 
-      uint16_t rNow, gNow, bNow, cNow;
-      tcs.getRawData(&rNow, &gNow, &bNow, &cNow);
+      uint16_t r, g, b, c;
+      tcs.getRawData(&r, &g, &b, &c);
 
-      if (cNow <= ballGoneClear) {
-        // Ball cleared normally
+      if (ballGone(c)) {
         setSortingState(SORT_IDLE);
       } else if (now - sortingStateStart >= 3000UL) {
-        // Ball still stuck after 3 seconds — retry gate
         if (DEBUG_SORTING) {
           Serial.println("Ball stuck — retrying gate.");
         }
@@ -441,8 +253,6 @@ void updateSorting() {
 
     case SORT_RETRY_HOLD_OPEN:
       if (now - sortingStateStart >= SORT_RESET_DELAY) {
-        // Go back to SORT_WAIT_CLEAR to check if ball cleared
-        // Reset the state start time so timeout resets too
         setSortingState(SORT_WAIT_CLEAR);
       }
       break;

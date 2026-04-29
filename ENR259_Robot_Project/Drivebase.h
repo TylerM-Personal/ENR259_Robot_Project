@@ -13,6 +13,8 @@ void resetYaw();   // call after all inits to zero heading reference
 // durationMs — drives for fixed time, gyro PID corrects heading throughout
 void startStraightMove(unsigned long durationMs, int baseSpeed, int direction, float targetHeading);
 void startPivotToHeading(float targetHeading, TurnDirection direction);
+void startCornerPivotRightDegrees(float degrees);
+void cancelDrivebaseMove();
 
 bool  drivebaseIsBusy();
 float getYawAngle();

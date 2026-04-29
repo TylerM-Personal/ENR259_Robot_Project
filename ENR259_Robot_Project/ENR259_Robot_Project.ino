@@ -6,6 +6,7 @@
 #include "Sorting.h"
 #include "Conveyor.h"
 #include "Logger.h"
+#include "LimitSwitches.h"
 
 void setup() {
   //delay(5000); // temp to give time to connect to bluetooth
@@ -18,6 +19,7 @@ void setup() {
   initScooper();
   initGates();
   initConveyor();
+  initLimitSwitches();
 
   delay(500);
   resetYaw();
@@ -38,5 +40,6 @@ void loop() {
   updateSorting();
   updateScooper();
   updateGates();
+  updateLimitSwitches();
   updateMission();
 }

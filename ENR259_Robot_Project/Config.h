@@ -66,6 +66,31 @@ constexpr int BLUE_GATE_SERVO_PIN  = 13;
 constexpr int SORTING_SERVO_PIN   = 3;
 constexpr int SORT_GATE_SERVO_PIN = 2;
 
+
+// =========================
+// Limit switches for final wall alignment
+// Wiring: one side of switch to the Teensy pin, other side to GND.
+// INPUT_PULLUP means pressed reads LOW. Do not wire these pins to 5V.
+// Pin 23 is on the side header. Pin 24 also works as digital I/O on Teensy 4.0,
+// but it may be on a bottom pad depending on your board/breakout.
+// =========================
+constexpr int FIRST_LIMIT_PIN = 23;   // first wall touch before the 90 degree right pivot
+constexpr int BACK_LIMIT_PIN  = 24;   // second click while backing up
+constexpr unsigned long LIMIT_DEBOUNCE_MS = 35;
+
+// Final wall alignment timing
+constexpr unsigned long FINAL_WALL_APPROACH_TIMEOUT_MS = 6000;
+constexpr unsigned long BACKUP_TO_WALL_TIMEOUT_MS      = 5000;
+constexpr unsigned long FINAL_ALIGN_SETTLE_MS          = 250;
+constexpr int WALL_BACKUP_SPEED = 120;
+
+// Corner pivot tuning
+// This uses the left motor forward and the right motor stopped so the robot
+// swings around the right side/corner instead of spinning in place.
+constexpr float WALL_CORNER_PIVOT_DEG = 90.0f;
+constexpr int WALL_PIVOT_SPEED = 120;
+constexpr unsigned long WALL_PIVOT_TIMEOUT_MS = 3500;
+
 // =========================
 // Field / path constants — TIME BASED
 // Tune all _MS values on your actual turf
@@ -138,7 +163,7 @@ constexpr int SORT_BLUE_POS   = 130;
 
 constexpr unsigned long SORT_AMBIENT_CAL_MS  = 2000;
 constexpr unsigned long SORTING_SERVO_DELAY  = 300;
-constexpr unsigned long SORT_GATE_OPEN_TIME  = 1000;
+constexpr unsigned long SORT_GATE_OPEN_TIME  = 700;
 constexpr unsigned long SORT_RESET_DELAY     = 200;
 constexpr unsigned long SORT_SENSOR_READ_MS  = 60;
 constexpr unsigned long SORT_SAMPLE_GAP_MS   = 12;

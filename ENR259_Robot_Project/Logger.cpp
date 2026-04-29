@@ -3,57 +3,46 @@
 
 namespace {
   unsigned long lastLogTime = 0;
-  constexpr unsigned long LOG_INTERVAL_MS = 100;
+  constexpr unsigned long LOG_INTERVAL_MS = 200;
 }
 
 void initLogger() {
   Serial1.begin(9600);
-  Serial1.println("Move       | Time_ms | Yaw      | Target   | Error    | Correction | Left | Right");
-  Serial1.println("-----------|---------|----------|----------|----------|------------|------|------");
+  Serial1.println("Time_ms | R     | G     | B     | C     | G*1.2  | B*1.83");
+  Serial1.println("--------|-------|-------|-------|-------|--------|--------");
 }
 
-void logDriveData(LogMoveType moveType, float yaw, float targetHeading, float error, float correction, int leftSpeed, int rightSpeed) {
+void logColorData(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
   unsigned long now = millis();
   if (now - lastLogTime < LOG_INTERVAL_MS) return;
   lastLogTime = now;
 
-  // Move type (10 chars)
-  const char* label = moveType == LOG_STRAIGHT ? "STRAIGHT  " : "PIVOT     ";
-  Serial1.print(label);
-  Serial1.print(" | ");
-
-  // Time (7 chars)
   char buf[32];
+
   sprintf(buf, "%7lu", now);
   Serial1.print(buf);
   Serial1.print(" | ");
 
-  // Yaw (8 chars)
-  sprintf(buf, "%8.3f", yaw);
+  sprintf(buf, "%5u", r);
   Serial1.print(buf);
   Serial1.print(" | ");
 
-  // Target (8 chars)
-  sprintf(buf, "%8.3f", targetHeading);
+  sprintf(buf, "%5u", g);
   Serial1.print(buf);
   Serial1.print(" | ");
 
-  // Error (8 chars)
-  sprintf(buf, "%8.3f", error);
+  sprintf(buf, "%5u", b);
   Serial1.print(buf);
   Serial1.print(" | ");
 
-  // Correction (10 chars)
-  sprintf(buf, "%10.3f", correction);
+  sprintf(buf, "%5u", c);
   Serial1.print(buf);
   Serial1.print(" | ");
 
-  // Left speed (4 chars)
-  sprintf(buf, "%4d", leftSpeed);
+  sprintf(buf, "%6.1f", g * 1.2f);
   Serial1.print(buf);
   Serial1.print(" | ");
 
-  // Right speed (4 chars)
-  sprintf(buf, "%4d", rightSpeed);
+  sprintf(buf, "%6.1f", b * 1.83f);
   Serial1.println(buf);
 }

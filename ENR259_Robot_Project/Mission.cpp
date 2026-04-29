@@ -1,6 +1,7 @@
 #include "Config.h"
 #include "Drivebase.h"
 #include "Gates.h"
+#include "LimitSwitches.h"
 #include "Mission.h"
 #include "Scooper.h"
 #include "Sorting.h"
@@ -15,17 +16,21 @@ enum MissionState {
   MISSION_WAIT_TURN_TO_SHIFT,
   MISSION_WAIT_SHIFT,
   MISSION_WAIT_TURN_TO_NEXT_LANE,
-  MISSION_WAIT_FINAL_SIDEWAYS_TURN,
-  MISSION_WAIT_RED_DROP,
+  MISSION_START_FINAL_WALL_APPROACH,
+  MISSION_WAIT_FIRST_LIMIT,
+  MISSION_WAIT_CORNER_PIVOT_RIGHT,
+  MISSION_WAIT_BACK_LIMIT,
+  MISSION_WAIT_BLUE_DROP,
   MISSION_WAIT_MOVE_TO_WHITE,
   MISSION_WAIT_WHITE_DROP,
-  MISSION_WAIT_MOVE_TO_BLUE,
-  MISSION_WAIT_BLUE_DROP,
+  MISSION_WAIT_MOVE_TO_RED,
+  MISSION_WAIT_RED_DROP,
   MISSION_DONE
 };
 
 MissionState missionState = MISSION_START_LANE;
 int currentLane = 1;
+float finalDropHeading = 0.0f;
 
 float headingForLane(int lane) {
   switch (lane) {
@@ -97,8 +102,7 @@ void updateMission() {
           }
           setMissionState(MISSION_WAIT_TURN_TO_SHIFT);
         } else {
-          startPivotToHeading(FINAL_WALL_HEADING, TURN_LEFT_DIR);
-          setMissionState(MISSION_WAIT_FINAL_SIDEWAYS_TURN);
+          setMissionState(MISSION_START_FINAL_WALL_APPROACH);
         }
       }
       break;
@@ -128,16 +132,56 @@ void updateMission() {
       }
       break;
 
-    case MISSION_WAIT_FINAL_SIDEWAYS_TURN:
+    case MISSION_START_FINAL_WALL_APPROACH:
       if (!drivebaseIsBusy()) {
-        startGateCycle(GATE_RED);
-        setMissionState(MISSION_WAIT_RED_DROP);
+        clearLimitSwitchClicks();
+        startStraightMove(FINAL_WALL_APPROACH_TIMEOUT_MS, DRIVE_SPEED, +1, headingForLane(currentLane));
+        setMissionState(MISSION_WAIT_FIRST_LIMIT);
       }
       break;
 
-    case MISSION_WAIT_RED_DROP:
+    case MISSION_WAIT_FIRST_LIMIT:
+      // First limit switch click: stop driving into the wall and do the 90 degree right corner pivot.
+      if (firstLimitClicked() || firstLimitPressed()) {
+        //cancelDrivebaseMove();
+        delay(FINAL_ALIGN_SETTLE_MS);
+        //startCornerPivotRightDegrees(WALL_CORNER_PIVOT_DEG);
+        setMissionState(MISSION_WAIT_CORNER_PIVOT_RIGHT);
+      }
+      else if (!drivebaseIsBusy()) {
+        // Safety timeout: still continue instead of getting stuck forever.
+        startCornerPivotRightDegrees(WALL_CORNER_PIVOT_DEG);
+        setMissionState(MISSION_WAIT_CORNER_PIVOT_RIGHT);
+      }
+      break;
+
+    case MISSION_WAIT_CORNER_PIVOT_RIGHT:
+      if (!drivebaseIsBusy()) {
+        finalDropHeading = getYawAngle();
+        clearLimitSwitchClicks();
+        startStraightMove(BACKUP_TO_WALL_TIMEOUT_MS, WALL_BACKUP_SPEED, -1, finalDropHeading);
+        setMissionState(MISSION_WAIT_BACK_LIMIT);
+      }
+      break;
+
+    case MISSION_WAIT_BACK_LIMIT:
+      // Second limit switch click while backing up: stop and start final drop sequence.
+      if (backLimitClicked() || backLimitPressed()) {
+        cancelDrivebaseMove();
+        delay(FINAL_ALIGN_SETTLE_MS);
+        startGateCycle(GATE_BLUE);
+        setMissionState(MISSION_WAIT_BLUE_DROP);
+      }
+      else if (!drivebaseIsBusy()) {
+        // Safety timeout: drop anyway if the switch never gets hit.
+        startGateCycle(GATE_BLUE);
+        setMissionState(MISSION_WAIT_BLUE_DROP);
+      }
+      break;
+
+    case MISSION_WAIT_BLUE_DROP:
       if (!gatesAreBusy()) {
-        startStraightMove(FINAL_DROP_STEP_MS, DRIVE_SPEED, +1, FINAL_WALL_HEADING);
+        startStraightMove(FINAL_DROP_STEP_MS, DRIVE_SPEED, +1, finalDropHeading);
         setMissionState(MISSION_WAIT_MOVE_TO_WHITE);
       }
       break;
@@ -151,21 +195,22 @@ void updateMission() {
 
     case MISSION_WAIT_WHITE_DROP:
       if (!gatesAreBusy()) {
-        startStraightMove(FINAL_DROP_STEP_MS, DRIVE_SPEED, +1, FINAL_WALL_HEADING);
-        setMissionState(MISSION_WAIT_MOVE_TO_BLUE);
+        startStraightMove(FINAL_DROP_STEP_MS, DRIVE_SPEED, +1, finalDropHeading);
+        setMissionState(MISSION_WAIT_MOVE_TO_RED);
       }
       break;
 
-    case MISSION_WAIT_MOVE_TO_BLUE:
+    case MISSION_WAIT_MOVE_TO_RED:
       if (!drivebaseIsBusy()) {
-        startGateCycle(GATE_BLUE);
-        setMissionState(MISSION_WAIT_BLUE_DROP);
+        startGateCycle(GATE_RED);
+        setMissionState(MISSION_WAIT_RED_DROP);
       }
       break;
 
-    case MISSION_WAIT_BLUE_DROP:
+    case MISSION_WAIT_RED_DROP:
       if (!gatesAreBusy()) {
         stopDrivebase();
+        conveyorOff();
         setScooperUp();
         setMissionState(MISSION_DONE);
       }

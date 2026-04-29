@@ -40,3 +40,13 @@ Notes:
 - Encoders remain disabled in this version because the sorter now uses pins 2 and 3, and the scooper uses pins 4 and 5.
 - If a servo moves the wrong way, swap that servo's open and closed values in Config.h.
 - Keep the sensor area empty during startup so ambient calibration is clean.
+
+
+Limit switch final alignment update:
+- Added two INPUT_PULLUP limit switches.
+- FIRST_LIMIT_PIN = 23 triggers the final 90 degree right corner pivot.
+- BACK_LIMIT_PIN = 24 stops the robot while backing up before the final drop sequence.
+- Wire each switch between the Teensy pin and GND. Do not wire the switch to 5V.
+- Final drops now happen in this order: blue, move 1.5 ft timing step, white, move 1.5 ft timing step, red, done.
+- FINAL_DROP_STEP_MS is still time based, so tune it until the robot actually moves about 1.5 ft on your turf.
+- Pin 24 works as digital I/O on Teensy 4.0, but it may be on a bottom pad depending on your board/breakout.

@@ -1,9 +1,5 @@
 #pragma once
-
-enum LogMoveType {
-  LOG_STRAIGHT,
-  LOG_PIVOT
-};
+#include <stdint.h>
 
 void initLogger();
-void logDriveData(LogMoveType moveType, float yaw, float targetHeading, float error, float correction, int leftSpeed, int rightSpeed);
+void logColorData(uint16_t r, uint16_t g, uint16_t b, uint16_t c);
