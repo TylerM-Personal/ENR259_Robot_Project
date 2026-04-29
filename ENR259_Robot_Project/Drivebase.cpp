@@ -1,6 +1,8 @@
 #include "Config.h"
 #include "Drivebase.h"
+#include "Logger.h"
 #include <Wire.h>
+#include <MPU6050.h>
 #include <math.h>
 
 namespace {
@@ -17,6 +19,8 @@ enum DrivebaseState {
 // Encoders disabled — ISRs kept but not attached
 volatile long leftCounts  = 0;
 volatile long rightCounts = 0;
+
+MPU6050 mpu;
 
 float gyroZOffset  = 0.0f;
 float yawAngle     = 0.0f;
@@ -46,21 +50,8 @@ void rightEncoderISR() {
   else                         rightCounts--;
 }
 
-void mpuWrite(uint8_t reg, uint8_t val) {
-  Wire.beginTransmission(MPU_ADDR);
-  Wire.write(reg);
-  Wire.write(val);
-  Wire.endTransmission();
-}
-
 float readGyroZ() {
-  Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x47);
-  Wire.endTransmission(false);
-  Wire.requestFrom((int)MPU_ADDR, 2, true);
-  if (Wire.available() < 2) return 0.0f;
-  int16_t raw = (Wire.read() << 8) | Wire.read();
-  return (raw / 131.0f) - gyroZOffset;
+  return (mpu.getRotationZ() / 131.0f) - gyroZOffset;
 }
 
 void calibrateGyro() {
@@ -68,23 +59,12 @@ void calibrateGyro() {
   int validSamples = 0;
 
   for (int i = 0; i < 500; i++) {
-    Wire.beginTransmission(MPU_ADDR);
-    Wire.write(0x47);
-    Wire.endTransmission(false);
-    Wire.requestFrom((int)MPU_ADDR, 2, true);
-    if (Wire.available() >= 2) {
-      int16_t raw = (Wire.read() << 8) | Wire.read();
-      sum += raw / 131.0f;
-      validSamples++;
-    }
+    sum += mpu.getRotationZ() / 131.0f;
+    validSamples++;
     delay(2);
   }
 
-  if (validSamples > 0) {
-    gyroZOffset = sum / validSamples;
-  } else {
-    gyroZOffset = 0.0f;
-  }
+  gyroZOffset = validSamples > 0 ? sum / validSamples : 0.0f;
 
   if (DEBUG_DRIVE) {
     Serial.print("Gyro calibrated. validSamples=");
@@ -97,9 +77,13 @@ void calibrateGyro() {
 void initMPU() {
   Wire.begin();
   Wire.setClock(400000);
-  mpuWrite(0x6B, 0x00);
-  mpuWrite(0x1B, 0x00);
-  mpuWrite(0x1A, 0x03);
+  mpu.initialize();
+
+  if (DEBUG_DRIVE) {
+    Serial.print("MPU connection: ");
+    Serial.println(mpu.testConnection() ? "OK" : "FAILED");
+  }
+
   delay(100);
   calibrateGyro();
   yawAngle     = 0.0f;
@@ -274,6 +258,7 @@ void updateDrivebase() {
       int leftSpeed  = constrain(activeDirection * activeBaseSpeed + static_cast<int>(correction), -255, 255);
       int rightSpeed = constrain(activeDirection * activeBaseSpeed - static_cast<int>(correction), -255, 255);
 
+      logDriveData(LOG_STRAIGHT, yawAngle, activeTargetHeading, error, correction, leftSpeed, rightSpeed);
       drive(leftSpeed, rightSpeed);
       break;
     }
@@ -290,6 +275,7 @@ void updateDrivebase() {
       }
 
       int turnSpd = constrain(static_cast<int>(remaining * 3.0f), 80, TURN_SPEED);
+      logDriveData(LOG_PIVOT, yawAngle, activeTargetHeading, remaining, 0.0f, -turnSpd, turnSpd);
       drive(-turnSpd, turnSpd);
       break;
     }
@@ -306,6 +292,7 @@ void updateDrivebase() {
       }
 
       int turnSpd = constrain(static_cast<int>(remaining * 3.0f), 80, TURN_SPEED);
+      logDriveData(LOG_PIVOT, yawAngle, activeTargetHeading, remaining, 0.0f, turnSpd, -turnSpd);
       drive(turnSpd, -turnSpd);
       break;
     }

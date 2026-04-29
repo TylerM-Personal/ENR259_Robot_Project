@@ -5,9 +5,12 @@
 #include "Scooper.h"
 #include "Sorting.h"
 #include "Conveyor.h"
+#include "Logger.h"
 
 void setup() {
+  delay(5000); // temp to give time to connect to bluetooth
   Serial.begin(115200);
+  initLogger();
   // while (!Serial && millis() < 3000) {}
 
   initDrivebase();
