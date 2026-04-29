@@ -51,7 +51,9 @@ enum SortingState {
   SORT_MOVE_TO_TARGET,
   SORT_GATE_HOLD_OPEN,
   SORT_RETURN_HOME,
-  SORT_WAIT_CLEAR
+  SORT_WAIT_CLEAR,
+  SORT_RETRY_GATE,
+  SORT_RETRY_HOLD_OPEN
 };
 
 SortingState sortingState = SORT_IDLE;
@@ -342,7 +344,9 @@ bool sortingIsBusy() {
   if (!sortingEnabled) return false;
   return sortingState == SORT_MOVE_TO_TARGET ||
          sortingState == SORT_GATE_HOLD_OPEN ||
-         sortingState == SORT_RETURN_HOME;
+         sortingState == SORT_RETURN_HOME ||
+         sortingState == SORT_RETRY_GATE ||
+         sortingState == SORT_RETRY_HOLD_OPEN;
 }
 
 void updateSorting() {
@@ -413,10 +417,34 @@ void updateSorting() {
 
       uint16_t rNow, gNow, bNow, cNow;
       tcs.getRawData(&rNow, &gNow, &bNow, &cNow);
+
       if (cNow <= ballGoneClear) {
+        // Ball cleared normally
         setSortingState(SORT_IDLE);
+      } else if (now - sortingStateStart >= 3000UL) {
+        // Ball still stuck after 3 seconds — retry gate
+        if (DEBUG_SORTING) {
+          Serial.println("Ball stuck — retrying gate.");
+        }
+        sortGateServo.write(SORT_GATE_OPEN_POS);
+        setSortingState(SORT_RETRY_GATE);
       }
       break;
     }
+
+    case SORT_RETRY_GATE:
+      if (now - sortingStateStart >= SORT_GATE_OPEN_TIME) {
+        sortGateServo.write(SORT_GATE_CLOSED_POS);
+        setSortingState(SORT_RETRY_HOLD_OPEN);
+      }
+      break;
+
+    case SORT_RETRY_HOLD_OPEN:
+      if (now - sortingStateStart >= SORT_RESET_DELAY) {
+        // Go back to SORT_WAIT_CLEAR to check if ball cleared
+        // Reset the state start time so timeout resets too
+        setSortingState(SORT_WAIT_CLEAR);
+      }
+      break;
   }
 }

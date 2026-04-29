@@ -63,7 +63,12 @@ void updateMission() {
       if (!drivebaseIsBusy()) {
         conveyorOn();
         setScooperDown();
-        startStraightMove(LANE_DRIVE_MS, DRIVE_SPEED, +1, headingForLane(currentLane));
+        if (currentLane % 2 == 1) {
+          startStraightMove(ODD_LANE_DRIVE_MS, DRIVE_SPEED, +1, headingForLane(currentLane));
+        }
+        else {
+          startStraightMove(EVEN_LANE_DRIVE_MS, DRIVE_SPEED, +1, headingForLane(currentLane));
+        }
         setMissionState(MISSION_WAIT_LANE);
       }
       break;

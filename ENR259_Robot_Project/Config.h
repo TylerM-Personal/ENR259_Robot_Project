@@ -70,9 +70,10 @@ constexpr int SORT_GATE_SERVO_PIN = 2;
 // Field / path constants — TIME BASED
 // Tune all _MS values on your actual turf
 // =========================
-constexpr int TOTAL_LANES = 5;
+constexpr int TOTAL_LANES = 3;
 
-constexpr unsigned long LANE_DRIVE_MS      = 4200;
+constexpr unsigned long ODD_LANE_DRIVE_MS      = 5000;
+constexpr unsigned long EVEN_LANE_DRIVE_MS      = 5200;
 constexpr unsigned long LANE_SHIFT_MS      = 800;
 constexpr unsigned long FINAL_DROP_STEP_MS = 1200;
 
@@ -100,8 +101,8 @@ constexpr float TURN_STOP_TOLERANCE_DEG = 2.0f;
 constexpr float GYRO_Z_SIGN             = 1.0f;
 
 constexpr float KP = 1.0f;
-constexpr float KI = 0.0f;
-constexpr float KD = 0.4f;
+constexpr float KI = 0.5f;
+constexpr float KD = 0.0f;
 
 constexpr float DIST_PER_COUNT = 0.505f;
 
@@ -133,11 +134,11 @@ constexpr int SORT_GATE_OPEN_POS   = 45;
 constexpr int SORT_ORIGIN_POS = 90;
 constexpr int SORT_RED_POS    = 50;
 constexpr int SORT_WHITE_POS  = 90;
-constexpr int SORT_BLUE_POS   = 180;
+constexpr int SORT_BLUE_POS   = 130;
 
 constexpr unsigned long SORT_AMBIENT_CAL_MS  = 2000;
 constexpr unsigned long SORTING_SERVO_DELAY  = 300;
-constexpr unsigned long SORT_GATE_OPEN_TIME  = 900;
+constexpr unsigned long SORT_GATE_OPEN_TIME  = 1000;
 constexpr unsigned long SORT_RESET_DELAY     = 200;
 constexpr unsigned long SORT_SENSOR_READ_MS  = 60;
 constexpr unsigned long SORT_SAMPLE_GAP_MS   = 12;
